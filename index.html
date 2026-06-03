@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conferência e Pedido</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary: #185FA5;
+            --primary-hover: #0C447C;
+            --danger: #A32D2D;
+            --danger-bg: #FCEBEB;
+            --danger-hover: #791F1F;
+            --success-text: #3B6D11;
+            --success-bg: #EAF3DE;
+            --bg-body: #f1f5f9;
+            --bg-card: #ffffff;
+            --bg-header: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --border-strong: #cbd5e1;
+            --input-focus: rgba(55,138,221,0.18);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 2.5rem 1rem;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 780px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border-radius: 14px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--bg-header);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.01em;
+        }
+
+        .header-title p {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.5rem 1.125rem;
+            border-radius: 7px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+            border: 1px solid transparent;
+        }
+
+        button:active { transform: scale(0.97); }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+        .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+
+        .btn-outline {
+            background: #fff;
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+        .btn-outline:hover { background: var(--danger-bg); }
+
+        .table-wrap {
+            padding: 1.5rem 2rem 0;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        thead th {
+            padding: 0.625rem 0.875rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border);
+            white-space: nowrap;
+        }
+
+        thead th.c { text-align: center; }
+
+        tbody tr {
+            transition: background 0.1s;
+        }
+
+        tbody tr:hover { background: #f8fafc; }
+
+        tbody td {
+            padding: 0.75rem 0.875rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            color: var(--text-main);
+        }
+
+        tbody td.c { text-align: center; }
+
+        tbody tr:last-child td { border-bottom: none; }
+
+        .num-input {
+            width: 76px;
+            padding: 0.4rem 0.5rem;
+            border: 1px solid var(--border-strong);
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-family: inherit;
+            color: var(--text-main);
+            background: #fff;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .num-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--input-focus);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.8rem;
+            border-radius: 50px;
+            font-size: 0.8125rem;
+            font-weight: 700;
+            min-width: 48px;
+            text-align: center;
+        }
+
+        .badge-ok {
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .badge-pedido {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        /* Assinatura */
+        .assinatura-section {
+            margin: 0 2rem;
+            padding: 1.75rem 0 2rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .assinatura-section h3 {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .assinatura-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: end;
+        }
+
+        .assinatura-campo label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .assinatura-campo input[type="text"] {
+            width: 100%;
+            border: none;
+            border-bottom: 1.5px solid var(--border-strong);
+            border-radius: 0;
+            padding: 0.35rem 0;
+            font-size: 0.9375rem;
+            font-family: inherit;
+            color: var(--text-main);
+            background: transparent;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .assinatura-campo input[type="text"]:focus {
+            border-bottom-color: var(--primary);
+        }
+
+        .assinatura-campo input[type="text"]::placeholder {
+            color: #c4cada;
+        }
+
+        .assinatura-linha {
+            border-bottom: 1.5px solid var(--border-strong);
+            padding-bottom: 0.35rem;
+            min-height: 32px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,0.35);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-overlay.open { display: flex; }
+
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.75rem;
+            width: 360px;
+            max-width: 92vw;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+
+        .modal h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .modal-btns {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #0f172a;
+            color: #fff;
+            border-radius: 8px;
+            padding: 0.6rem 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            z-index: 300;
+            transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Responsivo */
+        @media (max-width: 600px) {
+            body { padding: 1rem 0.5rem; }
+
+            .header { padding: 1.25rem; }
+            .table-wrap { padding: 1rem 1rem 0; }
+            .assinatura-section { margin: 0 1rem; }
+            .assinatura-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; }
+
+            tbody tr {
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                margin-bottom: 0.75rem;
+                padding: 0.25rem 0;
+            }
+
+            tbody td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.6rem 1rem;
+                border-bottom: 1px solid #f1f5f9;
+                text-align: right;
+            }
+
+            tbody tr:last-child td:last-child { border-bottom: none; }
+
+            tbody td::before {
+                content: attr(data-label);
+                font-size: 0.75rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: var(--text-muted);
+                text-align: left;
+            }
+
+            .num-input { width: 80px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-title">
+            <h1>Conferência e Pedido</h1>
+            <p id="data-header"></p>
+        </div>
+        <div class="btns">
+            <button class="btn-outline" onclick="pedirLimpar()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                Limpar estoque
+            </button>
+            <button class="btn-primary" onclick="exportarPDF()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                Exportar PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Descrição do item</th>
+                    <th class="c">Estoque ideal</th>
+                    <th class="c">Estoque atual</th>
+                    <th class="c">Pedido</th>
+                </tr>
+            </thead>
+            <tbody id="corpo"></tbody>
+        </table>
+    </div>
+
+    <div class="assinatura-section">
+        <h3>Responsável pelo pedido</h3>
+        <div class="assinatura-grid">
+            <div class="assinatura-campo">
+                <label for="nome-responsavel">Nome completo</label>
+                <input type="text" id="nome-responsavel" placeholder="Digite o nome..." maxlength="80">
+            </div>
+            <div class="assinatura-campo">
+                <label>Assinatura</label>
+                <div class="assinatura-linha"></div>
+            </div>
+        </div>
+        <div class="assinatura-grid" style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px dashed var(--border);">
+            <div class="assinatura-campo">
+                <label>Recebido por</label>
+                <div class="assinatura-linha"></div>
+            </div>
+            <div class="assinatura-campo">
+                <label>Assinatura</label>
+                <div class="assinatura-linha"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-limpar">
+    <div class="modal">
+        <h2>Limpar estoque atual?</h2>
+        <p>Todos os valores de estoque atual serão zerados. Esta ação não pode ser desfeita.</p>
+        <div class="modal-btns">
+            <button class="btn-outline" onclick="fecharModal()" style="border-color:var(--border-strong); color:var(--text-main);">Cancelar</button>
+            <button class="btn-outline" style="background:var(--danger); color:#fff; border-color:var(--danger);" onclick="confirmarLimpar()">Limpar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+    const produtos = [
+        { descricao: "Agulha 13x4.5", ideal: 30 },
+        { descricao: "Agulha 25x7",   ideal: 30 },
+        { descricao: "Seringa 1ml",   ideal: 15 },
+        { descricao: "Seringa 3ml",   ideal: 20 },
+        { descricao: "Seringa 5ml",   ideal: 20 },
+        { descricao: "Seringa 10ml",  ideal: 15 },
+        { descricao: "Seringa 20ml",  ideal: 20 },
+        { descricao: "Luva P",        ideal: 50 },
+        { descricao: "Luva M",        ideal: 50 },
+        { descricao: "Luva G",        ideal: 30 },
+    ];
+
+    let estoqueAtual = JSON.parse(localStorage.getItem("estoqueAtual") || "{}");
+
+    function salvar() {
+        localStorage.setItem("estoqueAtual", JSON.stringify(estoqueAtual));
+    }
+
+    function atualizar(nome, val) {
+        estoqueAtual[nome] = Math.max(0, parseInt(val) || 0);
+        salvar();
+        renderizar();
+    }
+
+    function pedirLimpar() {
+        document.getElementById('modal-limpar').classList.add('open');
+    }
+
+    function fecharModal() {
+        document.getElementById('modal-limpar').classList.remove('open');
+    }
+
+    function confirmarLimpar() {
+        estoqueAtual = {};
+        localStorage.removeItem("estoqueAtual");
+        fecharModal();
+        renderizar();
+        mostrarToast('Estoque zerado com sucesso');
+    }
+
+    function mostrarToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2500);
+    }
+
+    function renderizar() {
+        const corpo = document.getElementById('corpo');
+        const linhas = produtos.map(p => {
+            const atual = estoqueAtual[p.descricao] || 0;
+            const pedido = Math.max(0, p.ideal - atual);
+            const cls = pedido > 0 ? 'badge-pedido' : 'badge-ok';
+            return `
+            <tr>
+                <td data-label="Descrição">${p.descricao}</td>
+                <td data-label="Ideal" class="c" style="color:var(--text-muted)">${p.ideal}</td>
+                <td data-label="Atual" class="c">
+                    <input class="num-input" type="number" min="0" value="${atual}"
+                        onchange="atualizar('${p.descricao}', this.value)">
+                </td>
+                <td data-label="Pedido" class="c">
+                    <span class="badge ${cls}">${pedido}</span>
+                </td>
+            </tr>`;
+        }).join('');
+        corpo.innerHTML = linhas;
+    }
+
+    function exportarPDF() {
+        if (!window.jspdf) {
+            mostrarToast('Biblioteca PDF ainda carregando, tente novamente');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const responsavel = document.getElementById('nome-responsavel').value.trim();
+        const agora = new Date();
+        const dataStr = agora.toLocaleDateString('pt-BR');
+        const horaStr = agora.toLocaleTimeString('pt-BR');
+
+        // Cabeçalho
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(17);
+        doc.setTextColor(15, 23, 42);
+        doc.text("Conferência e Pedido", 14, 20);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Gerado em ${dataStr} às ${horaStr}`, 14, 27);
+
+        // Linha separadora
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.5);
+        doc.line(14, 31, 196, 31);
+
+        // Tabela
+        const colunas = ["Descrição do item", "Ideal", "Atual", "Pedido"];
+        const linhas = produtos.map(p => {
+            const atual = estoqueAtual[p.descricao] || 0;
+            const pedido = Math.max(0, p.ideal - atual);
+            return [p.descricao, p.ideal, atual, pedido];
+        });
+
+        doc.autoTable({
+            head: [colunas],
+            body: linhas,
+            startY: 37,
+            theme: "striped",
+            headStyles: {
+                fillColor: [24, 95, 165],
+                textColor: 255,
+                fontStyle: "bold",
+                fontSize: 10,
+            },
+            bodyStyles: { fontSize: 10 },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
+            columnStyles: {
+                1: { halign: "center" },
+                2: { halign: "center" },
+                3: { halign: "center", fontStyle: "bold" },
+            },
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index === 3) {
+                    const val = parseInt(data.cell.raw);
+                    data.cell.styles.textColor = val > 0 ? [163, 45, 45] : [59, 109, 17];
+                }
+            }
+        });
+
+        // Seção de assinatura — Responsável pelo pedido
+        const finalY = doc.lastAutoTable.finalY + 18;
+
+        doc.setDrawColor(226, 232, 240);
+        doc.line(14, finalY - 2, 196, finalY - 2);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text("RESPONSÁVEL PELO PEDIDO", 14, finalY + 5);
+
+        const nomeExibido = responsavel || "";
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42);
+        if (nomeExibido) doc.text(nomeExibido, 14, finalY + 14);
+
+        // Linha de assinatura — Responsável
+        doc.setDrawColor(100, 116, 139);
+        doc.setLineWidth(0.6);
+        doc.line(14, finalY + 34, 120, finalY + 34);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text("Assinatura", 14, finalY + 39);
+
+        // Seção de assinatura — Recebido por
+        const recebidoY = finalY + 58;
+
+        doc.setDrawColor(200, 210, 220);
+        doc.setLineWidth(0.3);
+        doc.line(14, recebidoY - 4, 196, recebidoY - 4);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text("RECEBIDO POR", 14, recebidoY + 5);
+
+        // Linha de assinatura — Recebido
+        doc.setDrawColor(100, 116, 139);
+        doc.setLineWidth(0.6);
+        doc.line(14, recebidoY + 28, 120, recebidoY + 28);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.text("Assinatura", 14, recebidoY + 33);
+
+        doc.save("pedido_estoque.pdf");
+        mostrarToast('PDF exportado com sucesso');
+    }
+
+    // Data no header
+    document.getElementById('data-header').textContent =
+        new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+
+    renderizar();
+</script>
+
+</body>
+</html>
