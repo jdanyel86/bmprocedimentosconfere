@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conferência e Pedido</title>
+    <title>Centro de Saúde</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -352,7 +352,7 @@
 <div class="container">
     <div class="header">
         <div class="header-title">
-            <h1>Conferência e Pedido</h1>
+            <h1>Cheklist sala de procedimentos</h1>
             <p id="data-header"></p>
         </div>
         <div class="btns">
@@ -360,6 +360,20 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                 Limpar estoque
             </button>
+
+            <!-- Input oculto para carregar o arquivo de backup -->
+            <input type="file" id="input-backup" accept=".json" style="display: none;" onchange="importarBackup(this)">
+            
+            <button class="btn-outline" onclick="document.getElementById('input-backup').click()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload
+            </button>
+
+            <button class="btn-outline" onclick="exportarBackup()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Backup
+            </button>
+
             <button class="btn-primary" onclick="exportarPDF()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 Exportar PDF
@@ -423,16 +437,56 @@
 
 <script>
     const produtos = [
-        { descricao: "Agulha 13x4.5", ideal: 30 },
+        { descricao: "AGE cicatrizante",   ideal: 1 },
+        { descricao: "Algodão",   ideal: 1 },
+        { descricao: "Atadura P",   ideal: 20 },
+        { descricao: "Atadura G",   ideal: 15 },
+        { descricao: "Albocath 16",   ideal: 10 },
+        { descricao: "Albocath 18",   ideal: 10 },
+        { descricao: "Albocath 20",   ideal: 15 },
+        { descricao: "Albocath 22",   ideal: 20 },
+        { descricao: "Albocath 24",   ideal: 20 },
+        { descricao: "Agulha 13x4.5", ideal: 15 },
+        { descricao: "Agulha 20x5,5",   ideal: 20 },
         { descricao: "Agulha 25x7",   ideal: 30 },
+        { descricao: "Agulha 30x7",   ideal: 30 },
+        { descricao: "Agulha 30x8",   ideal: 30 },
+        { descricao: "Agulha 40x1,2",   ideal: 30 },
+        { descricao: "Cateter Nasal Tipo Óculos Adulto",   ideal: 3 },
+        { descricao: "Cateter Nasal Tipo Óculos Infantil",   ideal: 3 },
+        { descricao: "Cateter Nasal Neo",   ideal: 2 },
+        { descricao: "Equipo Macrogotas",        ideal: 20 },
+        { descricao: "Equipo Multivias",   ideal: 3 },
+        { descricao: "Esparadrapo",   ideal: 1 },
+        { descricao: "Fio de Sutura Nylon 0,0",        ideal: 10 },
+        { descricao: "Fio de Sutura Nylon 2,0",        ideal: 10 },
+        { descricao: "Fio de Sutura Nylon 3,0",        ideal: 10 },
+        { descricao: "Fio de Sutura Nylon 4,0",        ideal: 10 },
+        { descricao: "Fio de Sutura Nylon 5,0",        ideal: 10 },
+        { descricao: "Hidrogel",   ideal: 1 },
+        { descricao: "Hidrogel com Alginato",   ideal: 1 },
+        { descricao: "Lamina de Bisturi 23",   ideal: 20 },
+        { descricao: "Mascará de Hudson Adulto",   ideal: 2 },
+        { descricao: "Mascará de Hudson Infantil",   ideal: 2 },
+        { descricao: "Micropore",   ideal: 1 },
         { descricao: "Seringa 1ml",   ideal: 15 },
         { descricao: "Seringa 3ml",   ideal: 20 },
         { descricao: "Seringa 5ml",   ideal: 20 },
         { descricao: "Seringa 10ml",  ideal: 15 },
         { descricao: "Seringa 20ml",  ideal: 20 },
-        { descricao: "Luva P",        ideal: 50 },
-        { descricao: "Luva M",        ideal: 50 },
-        { descricao: "Luva G",        ideal: 30 },
+        { descricao: "Scalpe 19",     ideal: 10 },
+        { descricao: "Scalpe 21",     ideal: 15 },
+        { descricao: "Scalpe 23",     ideal: 20 },
+        { descricao: "Scalpe 25",     ideal: 20 },
+        { descricao: "Scalpe 27",     ideal: 10 },
+        { descricao: "Sonda de Foley 12",     ideal: 2 },
+        { descricao: "Sonda de Foley 14",     ideal: 2 },
+        { descricao: "Sonda de Foley 16",     ideal: 2 },
+        { descricao: "Sonda de Foley 18",     ideal: 2 },
+        { descricao: "Sonda de Foley 20",     ideal: 2 },
+        { descricao: "Sonda uretral 10",     ideal: 2 },
+        { descricao: "Sonda uretral 16",     ideal: 2 },
+        { descricao: "Sonda uretral 18",     ideal: 2 },
     ];
 
     let estoqueAtual = JSON.parse(localStorage.getItem("estoqueAtual") || "{}");
@@ -490,6 +544,40 @@
             </tr>`;
         }).join('');
         corpo.innerHTML = linhas;
+    }
+
+    function exportarBackup() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(estoqueAtual, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `backup_estoque_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        mostrarToast('Backup gerado com sucesso');
+    }
+
+    function importarBackup(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const json = JSON.parse(e.target.result);
+                if (typeof json === 'object' && json !== null) {
+                    estoqueAtual = json;
+                    salvar();
+                    renderizar();
+                    mostrarToast('Backup restaurado com sucesso');
+                } else {
+                    mostrarToast('Arquivo de backup inválido');
+                }
+            } catch (err) {
+                mostrarToast('Erro ao ler arquivo de backup');
+            }
+        };
+        reader.readAsText(file);
+        input.value = '';
     }
 
     function exportarPDF() {
