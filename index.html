@@ -139,7 +139,13 @@
         }
         .btn-success:hover { background: #1B5E20; }
 
-        .btn-lixeira {
+        .btn-sair {
+            color: var(--danger) !important;
+            border-color: var(--danger) !important;
+        }
+        .btn-sair:hover {
+            background: var(--danger-bg) !important;
+        }
             background: none;
             border: none;
             cursor: pointer;
@@ -531,6 +537,11 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Adicionar Item
             </button>
+
+            <button class="btn-outline btn-sair" onclick="sair()" title="Trocar usuário">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sair
+            </button>
         </div>
     </div>
 
@@ -604,6 +615,9 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Limpar -->
+<div class="modal-overlay" id="modal-limpar">
     <div class="modal">
         <h2>Limpar estoque atual?</h2>
         <p>Todos os valores de estoque atual serão zerados. Esta ação não pode ser desfeita.</p>
@@ -730,7 +744,9 @@
     function todosProdutos() {
         const excluidos = JSON.parse(localStorage.getItem("produtosExcluidos") || "[]");
         const fixos = produtos.filter(p => !excluidos.includes(p.descricao));
-        return [...fixos, ...produtosExtras];
+        return [...fixos, ...produtosExtras].sort((a, b) =>
+            a.descricao.localeCompare(b.descricao, 'pt-BR', { sensitivity: 'base' })
+        );
     }
 
     function salvarExtras() {
@@ -1003,6 +1019,20 @@
             });
     }
     // ───────────────────────────────────────────────────────
+
+    function sair() {
+        const nome = sessionStorage.getItem('nomeUsuario') || '—';
+        enviarLog('LOGOUT', `Usuário "${nome}" saiu do sistema`);
+        sessionStorage.clear();
+        document.getElementById('login-overlay').classList.remove('hidden');
+        document.getElementById('login-usuario').value = '';
+        document.getElementById('login-senha').value = '';
+        document.getElementById('login-erro').classList.remove('show');
+        document.getElementById('btn-adicionar').style.display = 'none';
+        document.getElementById('th-acoes').style.display = 'none';
+        renderizar();
+        setTimeout(() => document.getElementById('login-usuario').focus(), 100);
+    }
 
     // ── LOGIN ──────────────────────────────────────────────
     // Para alterar: mude usuario, senha e nome abaixo
