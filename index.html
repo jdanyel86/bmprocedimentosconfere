@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -124,7 +123,34 @@
             margin-top: 0.25rem;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .btn-success {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.45rem 1rem;
+            border-radius: 7px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            background: #2E7D32;
+            color: #fff;
+            transition: background 0.15s;
+        }
+        .btn-success:hover { background: #1B5E20; }
+
+        .btn-lixeira {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--danger);
+            padding: 4px 6px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            transition: background 0.15s;
+        }
+        .btn-lixeira:hover { background: var(--danger-bg); }
 
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -500,6 +526,11 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 Exportar PDF
             </button>
+
+            <button class="btn-admin btn-success" id="btn-adicionar" onclick="abrirModalAdicionar()" style="display:none">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Adicionar Item
+            </button>
         </div>
     </div>
 
@@ -511,6 +542,7 @@
                     <th class="c">Estoque ideal</th>
                     <th class="c">Estoque atual</th>
                     <th class="c">Pedido</th>
+                    <th class="c th-acoes" id="th-acoes" style="display:none"></th>
                 </tr>
             </thead>
             <tbody id="corpo"></tbody>
@@ -542,8 +574,36 @@
     </div>
 </div>
 
-<!-- Modal -->
-<div class="modal-overlay" id="modal-limpar">
+<!-- Modal Adicionar Item -->
+<div class="modal-overlay" id="modal-adicionar">
+    <div class="modal">
+        <div class="modal-icon" style="background:#E8F5E9">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <h2 class="modal-title">Adicionar Item</h2>
+        <p class="modal-desc">Preencha os dados do novo produto.</p>
+        <div style="text-align:left; margin-bottom:1rem">
+            <label style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.35rem">Descrição do item</label>
+            <input type="text" id="novo-descricao" placeholder="Ex: Luva Cirúrgica M"
+                style="width:100%;padding:.5rem .75rem;border:1px solid var(--border-strong);border-radius:7px;font-size:.9375rem;font-family:inherit;outline:none"
+                onkeydown="if(event.key==='Enter') document.getElementById('novo-ideal').focus()">
+        </div>
+        <div style="text-align:left; margin-bottom:1.5rem">
+            <label style="font-size:0.75rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:.35rem">Estoque ideal</label>
+            <input type="number" id="novo-ideal" min="1" placeholder="Ex: 10"
+                style="width:100%;padding:.5rem .75rem;border:1px solid var(--border-strong);border-radius:7px;font-size:.9375rem;font-family:inherit;outline:none"
+                onkeydown="if(event.key==='Enter') confirmarAdicionar()">
+        </div>
+        <div id="novo-erro" style="display:none;font-size:.8125rem;color:var(--danger);background:var(--danger-bg);border-radius:6px;padding:.5rem .75rem;margin-bottom:1rem"></div>
+        <div class="modal-actions">
+            <button class="btn-outline" onclick="fecharModalAdicionar()">Cancelar</button>
+            <button class="btn-success" onclick="confirmarAdicionar()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Adicionar
+            </button>
+        </div>
+    </div>
+</div>
     <div class="modal">
         <h2>Limpar estoque atual?</h2>
         <p>Todos os valores de estoque atual serão zerados. Esta ação não pode ser desfeita.</p>
@@ -652,12 +712,44 @@
         setTimeout(() => t.classList.remove('show'), 2500);
     }
 
+    function isAdmin() {
+        return sessionStorage.getItem('isAdmin') === '1';
+    }
+
+    function aplicarAdmin() {
+        const admin = isAdmin();
+        document.getElementById('btn-adicionar').style.display = admin ? '' : 'none';
+        const th = document.getElementById('th-acoes');
+        if (th) th.style.display = admin ? '' : 'none';
+        renderizar();
+    }
+
+    // Produtos extras salvos no localStorage
+    let produtosExtras = JSON.parse(localStorage.getItem("produtosExtras") || "[]");
+
+    function todosProdutos() {
+        const excluidos = JSON.parse(localStorage.getItem("produtosExcluidos") || "[]");
+        const fixos = produtos.filter(p => !excluidos.includes(p.descricao));
+        return [...fixos, ...produtosExtras];
+    }
+
+    function salvarExtras() {
+        localStorage.setItem("produtosExtras", JSON.stringify(produtosExtras));
+    }
+
     function renderizar() {
         const corpo = document.getElementById('corpo');
-        const linhas = produtos.map(p => {
+        const admin = isAdmin();
+        const linhas = todosProdutos().map((p, idx) => {
             const atual = estoqueAtual[p.descricao] || 0;
             const pedido = Math.max(0, p.ideal - atual);
             const cls = pedido > 0 ? 'badge-pedido' : 'badge-ok';
+            const lixeira = admin ? `
+                <td class="c">
+                    <button class="btn-lixeira" title="Excluir item" onclick="excluirItem(${idx})">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                    </button>
+                </td>` : '';
             return `
             <tr>
                 <td data-label="Descrição">${p.descricao}</td>
@@ -669,9 +761,72 @@
                 <td data-label="Pedido" class="c">
                     <span class="badge ${cls}">${pedido}</span>
                 </td>
+                ${lixeira}
             </tr>`;
         }).join('');
         corpo.innerHTML = linhas;
+    }
+
+    function excluirItem(idx) {
+        const todos = todosProdutos();
+        const item = todos[idx];
+        if (!item) return;
+        if (!confirm(`Excluir "${item.descricao}" da lista?`)) return;
+        // Se for item fixo, move para lista de excluídos
+        if (idx < produtos.length) {
+            let excluidos = JSON.parse(localStorage.getItem("produtosExcluidos") || "[]");
+            excluidos.push(item.descricao);
+            localStorage.setItem("produtosExcluidos", JSON.stringify(excluidos));
+        } else {
+            produtosExtras.splice(idx - produtos.length, 1);
+            salvarExtras();
+        }
+        delete estoqueAtual[item.descricao];
+        salvar();
+        enviarLog('EXCLUSÃO', `Item "${item.descricao}" removido da lista`);
+        mostrarToast(`"${item.descricao}" removido`);
+        renderizar();
+    }
+
+    function abrirModalAdicionar() {
+        document.getElementById('novo-descricao').value = '';
+        document.getElementById('novo-ideal').value = '';
+        document.getElementById('novo-erro').style.display = 'none';
+        document.getElementById('modal-adicionar').classList.add('open');
+        setTimeout(() => document.getElementById('novo-descricao').focus(), 100);
+    }
+
+    function fecharModalAdicionar() {
+        document.getElementById('modal-adicionar').classList.remove('open');
+    }
+
+    function confirmarAdicionar() {
+        const desc = document.getElementById('novo-descricao').value.trim();
+        const ideal = parseInt(document.getElementById('novo-ideal').value);
+        const erroEl = document.getElementById('novo-erro');
+
+        if (!desc) {
+            erroEl.textContent = 'Informe a descrição do item.';
+            erroEl.style.display = 'block';
+            return;
+        }
+        if (!ideal || ideal < 1) {
+            erroEl.textContent = 'Informe um estoque ideal válido (mínimo 1).';
+            erroEl.style.display = 'block';
+            return;
+        }
+        if (todosProdutos().some(p => p.descricao.toLowerCase() === desc.toLowerCase())) {
+            erroEl.textContent = 'Já existe um item com essa descrição.';
+            erroEl.style.display = 'block';
+            return;
+        }
+
+        produtosExtras.push({ descricao: desc, ideal });
+        salvarExtras();
+        fecharModalAdicionar();
+        enviarLog('ADIÇÃO', `Item "${desc}" adicionado com estoque ideal ${ideal}`);
+        mostrarToast(`"${desc}" adicionado com sucesso`);
+        renderizar();
     }
 
     function exportarBackup() {
@@ -739,7 +894,7 @@
 
         // Tabela
         const colunas = ["Descrição do item", "Ideal", "Atual", "Pedido"];
-        const linhas = produtos.map(p => {
+        const linhas = todosProdutos().map(p => {
             const atual = estoqueAtual[p.descricao] || 0;
             const pedido = Math.max(0, p.ideal - atual);
             return [p.descricao, p.ideal, atual, pedido];
@@ -827,7 +982,7 @@
 
     // ── LOGS ───────────────────────────────────────────────
     // Cole aqui a URL gerada ao publicar o Google Apps Script
-    const LOG_URL = "https://script.google.com/macros/s/AKfycbwfbxHhDIAp_Ka42J89pFH5vdoHXyb29EYDNQMicokXZHxNbN0VQ9PQp0Dy7SFzRaHX/exec";
+    const LOG_URL = "COLE_AQUI_A_URL_DO_APPS_SCRIPT";
 
     function enviarLog(tipo, detalhes) {
         if (!LOG_URL || LOG_URL.startsWith("COLE")) return;
@@ -852,8 +1007,8 @@
     // ── LOGIN ──────────────────────────────────────────────
     // Para alterar: mude usuario, senha e nome abaixo
     const USUARIOS = [
-        { usuario: "admin",      senha: "1234",       nome: "Administrador" },
-        { usuario: "enfermagem", senha: "saude2025",  nome: "Equipe de Enfermagem" }
+        { usuario: "admin",      senha: "1234",       nome: "Administrador",       admin: true },
+        { usuario: "enfermagem", senha: "saude2025",  nome: "Equipe de Enfermagem", admin: false }
     ];
 
     function preencherResponsavel(nome) {
@@ -872,9 +1027,11 @@
         if (encontrado) {
             sessionStorage.setItem('logado', '1');
             sessionStorage.setItem('nomeUsuario', encontrado.nome);
+            sessionStorage.setItem('isAdmin', encontrado.admin ? '1' : '0');
             document.getElementById('login-overlay').classList.add('hidden');
             document.getElementById('login-erro').classList.remove('show');
             preencherResponsavel(encontrado.nome);
+            aplicarAdmin();
             enviarLog('LOGIN', `Usuário "${encontrado.nome}" fez login`);
         } else {
             enviarLog('LOGIN INVÁLIDO', `Tentativa com usuário "${u}"`);
@@ -889,6 +1046,7 @@
     if (sessionStorage.getItem('logado') === '1') {
         document.getElementById('login-overlay').classList.add('hidden');
         preencherResponsavel(sessionStorage.getItem('nomeUsuario') || '');
+        aplicarAdmin();
     }
     // ───────────────────────────────────────────────────────
 
